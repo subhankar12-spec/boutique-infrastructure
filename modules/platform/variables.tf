@@ -1,0 +1,12 @@
+variable "name" { type = string }
+variable "region" { type = string }
+variable "vpc_cidr" { type = string }
+variable "environments" { type = set(string) }
+variable "production" { type = bool }
+variable "kubernetes_version" { type = string }
+variable "admin_role_arn" { type = string }
+variable "node_instance_type" { type = string }
+variable "node_count" { type = number }
+variable "tags" { type = map(string) }
+variable "budget_email" { type = string }
+variable "monthly_budget_usd" { type = number }
