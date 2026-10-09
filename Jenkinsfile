@@ -2,7 +2,7 @@ pipeline {
     agent { label 'terraform-trusted' }
     options { timestamps(); timeout(time: 45, unit: 'MINUTES'); disableConcurrentBuilds(); skipDefaultCheckout(true) }
     parameters {
-        choice(name:'ENVIRONMENT',choices:['nonprod','production'])
+        choice(name:'ENVIRONMENT',choices:['nonprod','production','audit'])
         booleanParam(name:'APPLY',defaultValue:false,description:'Apply the reviewed saved plan')
     }
     stages {
@@ -12,7 +12,7 @@ pipeline {
         stage('Validate target') {
             steps {
                 script {
-                    if (!(params.ENVIRONMENT in ['nonprod', 'production'])) {
+                    if (!(params.ENVIRONMENT in ['nonprod', 'production', 'audit'])) {
                         error('Unsupported Terraform root')
                     }
                     env.TF_PLAN_DIR = sh(script: 'umask 077; mktemp -d /tmp/boutique-terraform-plan.XXXXXXXX', returnStdout: true).trim()
@@ -25,30 +25,34 @@ pipeline {
                 // outside the source checkout, and are removed after this block.
                 // AWS authentication comes from the trusted agent's short-lived
                 // workload identity; these files contain no AWS access keys.
-                withCredentials([
-                    file(credentialsId: "terraform-${params.ENVIRONMENT}-backend", variable: 'TF_BACKEND_FILE'),
-                    file(credentialsId: "terraform-${params.ENVIRONMENT}-variables", variable: 'TF_VARIABLES_FILE'),
-                    file(credentialsId: 'rds-global-ca-bundle', variable: 'RDS_CA_BUNDLE_PATH')
-                ]) {
+                script {
+                    def inputs=[file(credentialsId:"terraform-${params.ENVIRONMENT}-backend",variable:'TF_BACKEND_FILE'),file(credentialsId:"terraform-${params.ENVIRONMENT}-variables",variable:'TF_VARIABLES_FILE')]
+                    if (params.ENVIRONMENT!='audit') { inputs << file(credentialsId:'rds-global-ca-bundle',variable:'RDS_CA_BUNDLE_PATH') }
+                    withCredentials(inputs) {
                     sh '''set -eu
                         set +x
                         umask 077
+                        if [ "$ENVIRONMENT" != audit ]; then
                         openssl crl2pkcs7 -nocrl -certfile "$RDS_CA_BUNDLE_PATH" | openssl pkcs7 -print_certs -noout >/dev/null
                         install -m 0600 "$RDS_CA_BUNDLE_PATH" "$TF_PLAN_DIR/rds-ca.pem"
                         export TF_VAR_monitoring_postgresql_ca_file="$TF_PLAN_DIR/rds-ca.pem"
+                        set -- -var="monitoring_postgresql_ca_file=$TF_PLAN_DIR/rds-ca.pem"
+                        else
+                        set --
+                        fi
                         terraform fmt -check -recursive
                         cd "environments/$ENVIRONMENT"
                         terraform init -input=false -backend-config="$TF_BACKEND_FILE"
                         terraform validate
-                        terraform plan -input=false -var-file="$TF_VARIABLES_FILE" \
-                          -var="monitoring_postgresql_ca_file=$TF_PLAN_DIR/rds-ca.pem" \
+                        terraform plan -input=false -var-file="$TF_VARIABLES_FILE" "$@" \
                           -out="$TF_PLAN_DIR/deployment.tfplan"
                         chmod 600 "$TF_PLAN_DIR/deployment.tfplan"
                         terraform show -json "$TF_PLAN_DIR/deployment.tfplan" \
-                          | python "$WORKSPACE/scripts/summarize-plan.py" \
+                          | python3 "$WORKSPACE/scripts/summarize-plan.py" \
                           > "$WORKSPACE/plan-summary.json"
                         cat "$WORKSPACE/plan-summary.json"
                     '''
+                }
                 }
                 archiveArtifacts artifacts: 'plan-summary.json', fingerprint: true
             }

@@ -7,3 +7,9 @@ owner                      = "subhankar12-spec"
 enable_monitoring_database = true
 # Set an absolute path after fetching/reviewing the official CA bundle.
 # monitoring_postgresql_ca_file = "/absolute/path/boutique-infrastructure/certs/rds-global-bundle.pem"
+
+# CloudWatch infrastructure alarms: confirm each SNS email subscription.
+alarm_email_addresses = []
+# Paid node/pod telemetry, disabled until a compatible addon version is reviewed.
+enable_cloudwatch_observability        = false
+cloudwatch_observability_addon_version = ""

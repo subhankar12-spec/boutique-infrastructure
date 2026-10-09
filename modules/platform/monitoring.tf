@@ -55,7 +55,8 @@ resource "random_id" "monitoring_snapshot" {
 resource "aws_cloudwatch_log_group" "monitoring_database" {
   for_each          = var.enable_monitoring_database ? toset(["postgresql", "upgrade"]) : toset([])
   name              = "/aws/rds/instance/${local.monitoring_identifier}/${each.key}"
-  retention_in_days = var.production ? 90 : 30
+  retention_in_days = local.log_retention_days
+  kms_key_id        = aws_kms_key.logs.arn
   tags              = merge(local.tags, { Component = "incident-queue" })
 }
 

@@ -2,7 +2,7 @@
 
 This is an intentionally realistic reference, not the cheapest homelab option. It has not been applied. Use local Kubernetes first.
 
-- Separate nonprod/production roots and remote-state keys.
+- Separate nonprod/production roots and remote-state keys; account-level audit uses a third root and key.
 - Three-AZ VPCs, private workers and data subnets, private EKS API, IMDSv2, VPC flow logs and EKS audit logs.
 - Nonprod uses one NAT; production uses per-AZ NAT gateways.
 - Per-environment RDS PostgreSQL and TLS-enabled authenticated Redis. Production uses Multi-AZ RDS and Redis failover.
@@ -33,6 +33,7 @@ or AWS deployment identity. Configure Jenkins file credentials:
 | --- | --- |
 | `terraform-nonprod-backend` / `terraform-production-backend` | Reviewed S3 backend HCL for the selected state key |
 | `terraform-nonprod-variables` / `terraform-production-variables` | Reviewed environment tfvars (account/region, admin role and budget inputs) |
+| `terraform-audit-backend` / `terraform-audit-variables` | Separate audit state backend and reviewed account audit inputs |
 | `rds-global-ca-bundle` | Reviewed official RDS CA PEM bundle; public certificate material |
 
 AWS authentication uses the trusted agent's short-lived workload identity.
@@ -41,8 +42,7 @@ credentials in Secrets Manager. Credential file bindings are outside the source
 checkout and expire at the end of the planning block, so `deleteDir()` does not
 remove configuration before it is consumed. The pipeline copies the reviewed
 CA to the private plan directory and sets `TF_VAR_monitoring_postgresql_ca_file`
-plus the explicit plan variable to that stable path. A different tfvars path
-cannot silently override the trust bundle.
+plus an explicit plan variable to that stable path. A tfvars value cannot override the reviewed CA credential.
 
 The binary saved plan is private (directory 0700, file 0600), applied unchanged
 after approval and never archived. Terraform JSON is read through a pipe;
@@ -76,3 +76,7 @@ restore procedure. The queue and its HA adapter do not use the orders database.
 Terraform-generated application passwords and secret versions are sensitive values stored in state. State encryption does not remove the need to restrict reads and backups. The state backend currently uses S3-managed encryption and TLS enforcement. Enable the Project cost-allocation tag before relying on the tagged budget filter. Budget alerts exclude untagged/mistagged resources.
 
 EKS control planes, NAT gateways, workers, managed databases/caches, load balancers and logs all incur costs. This topology can cost hundreds of USD/month or more depending on region and usage. Use the homelab track unless you explicitly want to provision it. Teardown must disable data deletion protection through a reviewed change and preserve required snapshots; final-snapshot names must be made unique across recreation cycles.
+
+## AWS monitoring and audit
+
+See [aws-observability.md](docs/aws-observability.md) for encrypted CloudWatch logs, infrastructure dashboards/alarms, optional Container Insights and the multi-region CloudTrail. Apply `environments/audit` once per account; it does not require cluster/database deployment. Validate with `terraform -chdir=environments/audit validate` and run its offline policy tests with `terraform -chdir=environments/audit test`. SNS recipients require confirmed subscriptions.

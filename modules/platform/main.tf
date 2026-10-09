@@ -21,7 +21,8 @@ module "vpc" {
   enable_flow_log                                 = true
   create_flow_log_cloudwatch_iam_role             = true
   create_flow_log_cloudwatch_log_group            = true
-  flow_log_cloudwatch_log_group_retention_in_days = 30
+  flow_log_cloudwatch_log_group_retention_in_days = local.log_retention_days
+  flow_log_cloudwatch_log_group_kms_key_id        = aws_kms_key.logs.arn
   private_subnet_tags                             = { "kubernetes.io/role/internal-elb" = "1" }
   public_subnet_tags                              = { "kubernetes.io/role/elb" = "1" }
   tags                                            = local.tags
@@ -47,8 +48,8 @@ resource "aws_iam_role_policy_attachment" "cluster" {
 }
 resource "aws_cloudwatch_log_group" "eks" {
   name              = "/aws/eks/${var.name}/cluster"
-  retention_in_days = 30
-  kms_key_id        = null
+  retention_in_days = local.log_retention_days
+  kms_key_id        = aws_kms_key.logs.arn
   tags              = local.tags
 }
 resource "aws_eks_cluster" "this" {
@@ -200,6 +201,7 @@ resource "aws_db_instance" "orders" {
   skip_final_snapshot             = false
   final_snapshot_identifier       = "${var.name}-${each.key}-orders-final"
   enabled_cloudwatch_logs_exports = ["postgresql", "upgrade"]
+  depends_on                      = [aws_cloudwatch_log_group.orders]
   tags                            = merge(local.tags, { Environment = each.key })
 }
 resource "aws_elasticache_subnet_group" "redis" {
@@ -237,8 +239,17 @@ resource "aws_elasticache_replication_group" "redis" {
   kms_key_id                 = aws_kms_key.platform.arn
   transit_encryption_enabled = true
   auth_token                 = random_password.redis[each.key].result
-  snapshot_retention_limit   = var.production ? 7 : 1
-  tags                       = merge(local.tags, { Environment = each.key })
+  dynamic "log_delivery_configuration" {
+    for_each = toset(["slow-log", "engine-log"])
+    content {
+      destination      = aws_cloudwatch_log_group.redis["${each.key}/${log_delivery_configuration.value}"].name
+      destination_type = "cloudwatch-logs"
+      log_format       = "json"
+      log_type         = log_delivery_configuration.value
+    }
+  }
+  snapshot_retention_limit = var.production ? 7 : 1
+  tags                     = merge(local.tags, { Environment = each.key })
 }
 resource "aws_secretsmanager_secret" "application" {
   for_each                = var.environments

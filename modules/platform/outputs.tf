@@ -18,3 +18,11 @@ output "monitoring" {
     database_bootstrap_role_arn = aws_iam_role.monitoring_database_bootstrap[0].arn
   } : null
 }
+
+output "observability" {
+  value = { cloudwatch_dashboard = aws_cloudwatch_dashboard.infrastructure.dashboard_name,
+    alarm_topic_arn            = aws_sns_topic.infrastructure_alerts.arn,
+    eks_log_group              = aws_cloudwatch_log_group.eks.name,
+    container_insights_enabled = var.enable_cloudwatch_observability,
+  log_retention_days = local.log_retention_days }
+}

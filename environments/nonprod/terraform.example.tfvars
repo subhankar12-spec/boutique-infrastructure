@@ -7,3 +7,9 @@ owner                      = "subhankar12-spec"
 enable_monitoring_database = false
 # Enable for managed-queue staging tests; adds a separate RDS instance.
 # monitoring_postgresql_ca_file = "/absolute/path/boutique-infrastructure/certs/rds-global-bundle.pem"
+
+# CloudWatch infrastructure alarms: confirm each SNS email subscription.
+alarm_email_addresses = []
+# Paid node/pod telemetry, disabled until a compatible addon version is reviewed.
+enable_cloudwatch_observability        = false
+cloudwatch_observability_addon_version = ""
