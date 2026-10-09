@@ -67,7 +67,7 @@ RDS administrator secret or application secrets.
 
 ## Deliver credentials to Kubernetes
 
-Review `boutique-gitops/platform/external-secrets/monitoring/production.yaml`,
+Review `boutique-gitops/platform/external-secrets/monitoring/templates/production.yaml`,
 replace account, region and role ARN from Terraform outputs, then include those
 bindings in the AWS bootstrap. The namespace and ESO v1 CRDs must already exist.
 The namespace-scoped SecretStore authenticates as
