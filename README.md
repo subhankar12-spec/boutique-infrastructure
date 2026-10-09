@@ -11,6 +11,20 @@ This is an intentionally realistic reference, not the cheapest homelab option. I
 - Optional dedicated incident-queue RDS, scoped monitoring secret roles and TLS CA delivery; enabled by default in the production root.
 - An SSM-only private operator host for an administrative network path, with no inbound SSH.
 
+## Module layout
+
+Both deployment roots call `modules/platform`. Its resources are organized by
+component: [networking](modules/platform/networking.tf),
+[EKS](modules/platform/eks.tf), [IAM](modules/platform/iam.tf),
+[encryption](modules/platform/encryption.tf),
+[databases](modules/platform/databases.tf), [application secrets](modules/platform/secrets.tf)
+and [budgets](modules/platform/budgets.tf). Monitoring, observability and the
+operator host have their own existing files. See the [platform module guide](modules/platform/README.md).
+
+Terraform combines all `.tf` files in a directory into one module. File
+boundaries organize the code; nonprod and production keep their existing
+separate state roots and resource addresses.
+
 ## Validation without AWS
 
 ```bash
