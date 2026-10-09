@@ -10,3 +10,12 @@ variable "admin_role_arn" { type = string }
 variable "budget_email" { type = string }
 variable "monthly_budget_usd" { type = number }
 variable "owner" { type = string }
+variable "enable_monitoring_database" {
+  type    = bool
+  default = true
+}
+variable "monitoring_postgresql_ca_file" {
+  type     = string
+  default  = null
+  nullable = true
+}

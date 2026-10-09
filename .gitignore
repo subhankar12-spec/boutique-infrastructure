@@ -5,3 +5,6 @@
 !*.example.tfvars
 backend.hcl
 crash.log
+certs/*.pem
+*.integration-secrets.json
+__pycache__/

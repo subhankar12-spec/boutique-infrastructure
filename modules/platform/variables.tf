@@ -10,3 +10,14 @@ variable "node_count" { type = number }
 variable "tags" { type = map(string) }
 variable "budget_email" { type = string }
 variable "monthly_budget_usd" { type = number }
+variable "enable_monitoring_database" {
+  description = "Provision a dedicated RDS incident queue and scoped monitoring secret roles."
+  type        = bool
+  default     = false
+}
+variable "monitoring_postgresql_ca_file" {
+  description = "Absolute path to a reviewed official RDS CA PEM bundle; required when the managed queue is enabled."
+  type        = string
+  default     = null
+  nullable    = true
+}
