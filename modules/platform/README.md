@@ -26,8 +26,5 @@ explicit version. Its underlying resources are downloaded during initialization.
 The local component files organize this platform module without adding wrapper
 modules or separate component state.
 
-Moving existing blocks between these files preserves resource addresses such as
-`module.platform.module.vpc` and `module.platform.aws_eks_cluster.this`. This
-file reorganization changes no inputs, resources or provider versions and needs
-no Terraform state migration. AWS plan/apply and runtime acceptance remain
-operator steps documented in the [repository guide](../../README.md).
+AWS plan/apply and runtime acceptance remain operator steps documented in the
+[repository guide](../../README.md).
