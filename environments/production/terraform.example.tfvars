@@ -4,7 +4,7 @@ admin_role_arn             = "arn:aws:iam::123456789012:role/boutique-platform-a
 budget_email               = "replace-with-your-email@example.com"
 monthly_budget_usd         = 500
 owner                      = "subhankar12-spec"
-enable_monitoring_database = true
+enable_monitoring_database = false # Optional ServiceNow queue; enable only for that integration
 # Set an absolute path after fetching/reviewing the official CA bundle.
 # monitoring_postgresql_ca_file = "/absolute/path/boutique-infrastructure/certs/rds-global-bundle.pem"
 

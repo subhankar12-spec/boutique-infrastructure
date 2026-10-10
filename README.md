@@ -94,3 +94,8 @@ EKS control planes, NAT gateways, workers, managed databases/caches, load balanc
 ## AWS monitoring and audit
 
 See [aws-observability.md](docs/aws-observability.md) for encrypted CloudWatch logs, infrastructure dashboards/alarms, optional Container Insights and the multi-region CloudTrail. Apply `environments/audit` once per account; it does not require cluster/database deployment. Validate with `terraform -chdir=environments/audit validate` and run its offline policy tests with `terraform -chdir=environments/audit test`. SNS recipients require confirmed subscriptions.
+
+The dedicated monitoring/ServiceNow queue database is optional and disabled in
+both example environments. Standard Prometheus/Grafana/Alertmanager/Slack do not
+need it. Enable enable_monitoring_database only when deploying the incident
+adapter, after reviewing its cost, credentials, TLS and backup requirements.
