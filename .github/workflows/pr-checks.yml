@@ -1,0 +1,35 @@
+name: Pull request checks
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: pr-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  checks:
+    name: PR checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: 1.11.4
+          terraform_wrapper: false
+      - name: Install database test client
+        run: python3 -m pip install "psycopg[binary]==3.3.6"
+      - name: Test plan redaction and database provisioning
+        run: python3 -m unittest discover -s tests -v
+      - name: Validate Terraform without cloud credentials
+        run: |
+          terraform fmt -check -recursive
+          for root in bootstrap environments/audit environments/nonprod environments/production; do
+            terraform -chdir="$root" init -backend=false -input=false
+            terraform -chdir="$root" validate
+          done
